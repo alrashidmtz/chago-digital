@@ -47,11 +47,17 @@ async def inicializar_db():
         await conn.run_sync(Base.metadata.create_all)
 
 
-async def guardar_mensaje(telefono: str, role: str, content: str):
+def _clave_conversacion(telefono: str, canal: str = "whatsapp") -> str:
+    """Genera la clave única de conversación: canal:identificador."""
+    return f"{canal}:{telefono}"
+
+
+async def guardar_mensaje(telefono: str, role: str, content: str, canal: str = "whatsapp"):
     """Guarda un mensaje en el historial de conversación."""
+    clave = _clave_conversacion(telefono, canal)
     async with async_session() as session:
         mensaje = Mensaje(
-            telefono=telefono,
+            telefono=clave,
             role=role,
             content=content,
             timestamp=datetime.utcnow()
@@ -60,21 +66,23 @@ async def guardar_mensaje(telefono: str, role: str, content: str):
         await session.commit()
 
 
-async def obtener_historial(telefono: str, limite: int = 20) -> list[dict]:
+async def obtener_historial(telefono: str, limite: int = 20, canal: str = "whatsapp") -> list[dict]:
     """
     Recupera los últimos N mensajes de una conversación.
 
     Args:
-        telefono: Número de teléfono del cliente
+        telefono: Identificador del usuario (teléfono o chat_id)
         limite: Máximo de mensajes a recuperar (default: 20)
+        canal: Canal de mensajería ("whatsapp" o "telegram")
 
     Returns:
         Lista de diccionarios con role y content
     """
+    clave = _clave_conversacion(telefono, canal)
     async with async_session() as session:
         query = (
             select(Mensaje)
-            .where(Mensaje.telefono == telefono)
+            .where(Mensaje.telefono == clave)
             .order_by(Mensaje.timestamp.desc())
             .limit(limite)
         )
@@ -90,10 +98,11 @@ async def obtener_historial(telefono: str, limite: int = 20) -> list[dict]:
         ]
 
 
-async def limpiar_historial(telefono: str):
+async def limpiar_historial(telefono: str, canal: str = "whatsapp"):
     """Borra todo el historial de una conversación."""
+    clave = _clave_conversacion(telefono, canal)
     async with async_session() as session:
-        query = select(Mensaje).where(Mensaje.telefono == telefono)
+        query = select(Mensaje).where(Mensaje.telefono == clave)
         result = await session.execute(query)
         mensajes = result.scalars().all()
         for msg in mensajes:

@@ -14,10 +14,11 @@ from fastapi import Request
 @dataclass
 class MensajeEntrante:
     """Mensaje normalizado — mismo formato sin importar el proveedor."""
-    telefono: str       # Número del remitente
+    telefono: str       # Identificador del remitente (teléfono o chat_id)
     texto: str          # Contenido del mensaje
     mensaje_id: str     # ID único del mensaje
     es_propio: bool     # True si lo envió el agente (se ignora)
+    canal: str = "whatsapp"  # "whatsapp" o "telegram"
 
 
 class ProveedorWhatsApp(ABC):

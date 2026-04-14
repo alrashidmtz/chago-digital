@@ -24,3 +24,11 @@ def obtener_proveedor() -> ProveedorWhatsApp:
         return ProveedorTwilio()
     else:
         raise ValueError(f"Proveedor no soportado: {proveedor}. Usa: whapi, meta, o twilio")
+
+
+def obtener_proveedor_telegram() -> ProveedorWhatsApp | None:
+    """Retorna el proveedor de Telegram si está configurado, o None."""
+    if not os.getenv("TELEGRAM_BOT_TOKEN"):
+        return None
+    from agent.providers.telegram import ProveedorTelegram
+    return ProveedorTelegram()
