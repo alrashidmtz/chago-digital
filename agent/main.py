@@ -11,7 +11,6 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import PlainTextResponse
-from starlette.middleware.base import BaseHTTPMiddleware
 from dotenv import load_dotenv
 
 from agent.brain import generar_respuesta
@@ -63,13 +62,6 @@ async def health_check():
     """Endpoint de salud para Railway/monitoreo."""
     return {"status": "ok", "service": "agentkit"}
 
-
-@app.api_route("/webhook/{path:path}", methods=["GET", "POST", "PUT", "PATCH"])
-async def webhook_catchall(request: Request, path: str):
-    """Captura cualquier sub-ruta de /webhook para diagnosticar qué pide Whapi."""
-    body = await request.body()
-    logger.info(f"Webhook catch-all: {request.method} /webhook/{path} — body: {body[:500]}")
-    return {"status": "ok"}
 
 
 @app.get("/webhook")

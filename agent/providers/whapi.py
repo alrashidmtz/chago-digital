@@ -46,7 +46,7 @@ class ProveedorWhapi(ProveedorWhatsApp):
             logger.error(f"Error parseando JSON del webhook: {e}")
             return []
 
-        logger.debug(f"Whapi webhook payload: {body}")
+        logger.info(f"Whapi webhook payload: {body}")
 
         raw_messages = body.get("messages", [])
         if not raw_messages:
@@ -85,7 +85,7 @@ class ProveedorWhapi(ProveedorWhatsApp):
                 if not r.is_success:
                     logger.error(f"Error Whapi envío: {r.status_code} — {r.text}")
                     return False
-                logger.debug(f"Whapi envío exitoso: {r.status_code} — {r.text}")
+                logger.info(f"Whapi envío exitoso: {r.status_code} — {r.text}")
                 return True
         except httpx.TimeoutException:
             logger.error(f"Timeout al enviar mensaje a {telefono}")
