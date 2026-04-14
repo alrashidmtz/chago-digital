@@ -11,6 +11,7 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import PlainTextResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from dotenv import load_dotenv
 
 from agent.brain import generar_respuesta
@@ -43,7 +44,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="AgentKit — WhatsApp AI Agent",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    redirect_slashes=False
 )
 
 
@@ -54,6 +56,7 @@ async def health_check():
 
 
 @app.get("/webhook")
+@app.get("/webhook/")
 async def webhook_verificacion(request: Request):
     """Verificación GET del webhook (requerido por Meta Cloud API, no-op para otros)."""
     resultado = await proveedor.validar_webhook(request)
@@ -63,6 +66,7 @@ async def webhook_verificacion(request: Request):
 
 
 @app.post("/webhook")
+@app.post("/webhook/")
 async def webhook_handler(request: Request):
     """
     Recibe mensajes de WhatsApp via el proveedor configurado.
