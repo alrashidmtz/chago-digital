@@ -76,10 +76,12 @@ async def webhook_verificacion(request: Request):
 
 @app.post("/webhook")
 @app.post("/webhook/")
+@app.post("/webhook/messages")
+@app.post("/webhook/messages/")
 async def webhook_handler(request: Request):
     """
     Recibe mensajes de WhatsApp via el proveedor configurado.
-    Procesa el mensaje, genera respuesta con Claude y la envía de vuelta.
+    Whapi.cloud envía a /webhook/messages (usa la URL base + sub-rutas).
     """
     logger.info("Webhook POST recibido")
 
@@ -117,3 +119,10 @@ async def webhook_handler(request: Request):
     except Exception as e:
         logger.error(f"Error en webhook: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/webhook/statuses")
+@app.post("/webhook/statuses/")
+async def webhook_statuses(request: Request):
+    """Whapi envía actualizaciones de estado aquí. Solo aceptamos sin procesar."""
+    return {"status": "ok"}
