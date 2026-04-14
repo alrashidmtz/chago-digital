@@ -16,7 +16,7 @@ import httpx
 
 from agent.brain import generar_respuesta
 from agent.memory import inicializar_db, guardar_mensaje, obtener_historial
-from agent.providers import obtener_proveedor, obtener_proveedor_telegram
+from agent.providers import obtener_proveedor, obtener_proveedor_telegram, obtener_proveedor_meta
 
 load_dotenv()
 
@@ -29,6 +29,7 @@ logger = logging.getLogger("agentkit")
 # Proveedores de mensajería
 proveedor = obtener_proveedor()              # WhatsApp (siempre activo)
 proveedor_telegram = obtener_proveedor_telegram()  # Telegram (si hay token)
+proveedor_meta = obtener_proveedor_meta()    # Facebook + Instagram (si hay token)
 PORT = int(os.getenv("PORT", 8000))
 
 
@@ -55,6 +56,11 @@ async def lifespan(app: FastAPI):
                 logger.info(f"Telegram setWebhook → {r.status_code}: {r.text}")
     else:
         logger.info("Telegram: DESACTIVADO (sin TELEGRAM_BOT_TOKEN)")
+
+    if proveedor_meta:
+        logger.info("Meta (Facebook + Instagram): ACTIVO")
+    else:
+        logger.info("Meta (Facebook + Instagram): DESACTIVADO (sin FACEBOOK_PAGE_TOKEN)")
 
     yield
 
@@ -110,6 +116,8 @@ async def health_check():
         "canales": {
             "whatsapp": True,
             "telegram": proveedor_telegram is not None,
+            "facebook": proveedor_meta is not None,
+            "instagram": proveedor_meta is not None,
         }
     }
 
@@ -165,4 +173,36 @@ async def webhook_telegram(request: Request):
         return {"status": "ok"}
     except Exception as e:
         logger.error(f"Error en webhook Telegram: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── Facebook + Instagram (Meta) ────────────────────────────────────
+
+@app.get("/webhook/meta")
+@app.get("/webhook/meta/")
+async def webhook_meta_verificacion(request: Request):
+    """Verificación GET del webhook de Meta (Facebook + Instagram)."""
+    if not proveedor_meta:
+        return {"status": "ok"}
+
+    resultado = await proveedor_meta.validar_webhook(request)
+    if resultado is not None:
+        return PlainTextResponse(str(resultado))
+    return {"error": "Verificación fallida"}, 403
+
+
+@app.post("/webhook/meta")
+@app.post("/webhook/meta/")
+async def webhook_meta(request: Request):
+    """Recibe comentarios de Facebook Pages e Instagram."""
+    if not proveedor_meta:
+        raise HTTPException(status_code=404, detail="Meta no configurado")
+
+    logger.info("Webhook Meta POST recibido")
+    try:
+        mensajes = await proveedor_meta.parsear_webhook(request)
+        await procesar_mensajes(mensajes, proveedor_meta)
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Error en webhook Meta: {e}")
         raise HTTPException(status_code=500, detail=str(e))

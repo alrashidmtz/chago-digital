@@ -32,3 +32,11 @@ def obtener_proveedor_telegram() -> ProveedorWhatsApp | None:
         return None
     from agent.providers.telegram import ProveedorTelegram
     return ProveedorTelegram()
+
+
+def obtener_proveedor_meta() -> "ProveedorMetaComentarios | None":
+    """Retorna el proveedor de Meta (Facebook + Instagram) si está configurado, o None."""
+    if not os.getenv("FACEBOOK_PAGE_TOKEN"):
+        return None
+    from agent.providers.meta_comments import ProveedorMetaComentarios
+    return ProveedorMetaComentarios()
