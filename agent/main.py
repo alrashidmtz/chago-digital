@@ -49,10 +49,27 @@ app = FastAPI(
 )
 
 
+@app.middleware("http")
+async def log_all_requests(request: Request, call_next):
+    """Loguea TODAS las peticiones para diagnosticar qué envía Whapi."""
+    logger.info(f">>> {request.method} {request.url.path} from {request.client.host if request.client else 'unknown'}")
+    response = await call_next(request)
+    logger.info(f"<<< {request.method} {request.url.path} → {response.status_code}")
+    return response
+
+
 @app.get("/")
 async def health_check():
     """Endpoint de salud para Railway/monitoreo."""
     return {"status": "ok", "service": "agentkit"}
+
+
+@app.api_route("/webhook/{path:path}", methods=["GET", "POST", "PUT", "PATCH"])
+async def webhook_catchall(request: Request, path: str):
+    """Captura cualquier sub-ruta de /webhook para diagnosticar qué pide Whapi."""
+    body = await request.body()
+    logger.info(f"Webhook catch-all: {request.method} /webhook/{path} — body: {body[:500]}")
+    return {"status": "ok"}
 
 
 @app.get("/webhook")
